@@ -7,6 +7,7 @@ import '../db_helper.dart'; // Import the database helper
 import 'success_page.dart'; // Import the SuccessPage
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DateInputFormatter extends TextInputFormatter {
   @override
@@ -66,12 +67,35 @@ class _FormPageState extends State<FormPage> {
   String? _confirmPasswordError;
 
   List<String> _countries = ['USA', 'Canada', 'India', 'UK'];
-
+  late SharedPreferences _prefs;
   bool _validatePassword(String password) {
     final RegExp regex = RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@&$^]).{6,}$');
     return regex.hasMatch(password);
   }
+  @override
+  void initState() {
+    super.initState();
+    _initSharedPreferences();
+  }
 
+  void _initSharedPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+  Future<void> _fetchUserData(String email) async {
+    try {
+      final dbHelper = DatabaseHelper();
+      final user = await dbHelper.getUserByEmail(email);
+      if (user != null) {
+        // Handle the retrieved user data
+        print('User: ${user['firstName']} ${user['lastName']}');
+        // You can also update state or UI here if needed
+      } else {
+        print('No user found with that email.');
+      }
+    } catch (e) {
+      print('Error fetching user: $e');
+    }
+  }
   Future<void> _selectedDate() async {
     final DateTime today = DateTime.now();
     final DateTime? pickedDate = await showDatePicker(
@@ -90,6 +114,7 @@ class _FormPageState extends State<FormPage> {
 
 
   Future<void> _registerUser() async {
+    print('Register button pressed');
     setState(() {
       _termsError = _termsAccepted ? null : 'You must accept the terms and conditions';
       _genderError = _selectedGender == null ? 'Please select your gender' : null;
@@ -107,6 +132,8 @@ class _FormPageState extends State<FormPage> {
     });
 
     if (_formKey.currentState!.validate()) {
+      print('Form is valid');
+
       if (_genderError == null && _termsError == null && _passwordError == null && _confirmPasswordError == null) {
         final user = {
           'firstName': _firstNameController.text,
@@ -121,10 +148,8 @@ class _FormPageState extends State<FormPage> {
         };
 
         try {
-          // Create an instance of DBHelper
-          final dbHelper = DBHelper();
+          final dbHelper = DatabaseHelper();
 
-          // Check if email is already registered
           final existingUser = await dbHelper.getUserByEmail(_emailController.text);
           if (existingUser != null) {
             Fluttertoast.showToast(
@@ -139,21 +164,25 @@ class _FormPageState extends State<FormPage> {
             return;
           }
 
-          // Insert the new user
           await dbHelper.insertUser(user);
 
-          // Navigate to the SuccessPage
+          await _fetchUserData(_emailController.text);
+
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => SuccessPage(
+              builder: (context) => DetailsPage(
                 firstName: _firstNameController.text,
                 lastName: _lastNameController.text,
+                email: _emailController.text,
+                gender: _selectedGender ?? 'Not specified',
+                country: _country ?? 'Not specified',
               ),
             ),
           );
 
-          // Clear the form fields after navigation
+
+
           _firstNameController.clear();
           _lastNameController.clear();
           _emailController.clear();
@@ -171,14 +200,16 @@ class _FormPageState extends State<FormPage> {
             _confirmPasswordError = null;
           });
         } catch (e) {
-          print('Error: $e'); // Debugging statement
+          print('Error: $e');
         }
       }
     } else {
-      // Force a rebuild to display validation errors for all fields
+      print('Form is not valid');
       setState(() {});
     }
   }
+
+
 
 
   Widget radioWidget(String value) {
@@ -374,6 +405,7 @@ class _FormPageState extends State<FormPage> {
                           SizedBox(height: 10),
 
                           // Date of Birth
+                          // Date of Birth
                           TextFormField(
                             controller: _dobController,
                             decoration: InputDecoration(
@@ -386,17 +418,17 @@ class _FormPageState extends State<FormPage> {
                             ),
                             keyboardType: TextInputType.number,
                             inputFormatters: [
-                              DateInputFormatter(),  //use the custom date input formatter
+                              DateInputFormatter(),  // Use the custom date input formatter
                             ],
                             validator: (value) {
-                              // If value is null or empty, no validation is needed
                               if (value == null || value.isEmpty) {
-                                return null; // Or return a different message if needed
+                                return null;
                               }
 
                               try {
-                                // Attempt to parse the date
-                                final DateTime selectedDate = DateTime.parse(value);
+                                // Parse the date using the correct format
+                                final DateFormat dateFormat = DateFormat('dd/MM/yyyy');
+                                final DateTime selectedDate = dateFormat.parseStrict(value);
                                 final DateTime currentDate = DateTime.now();
 
                                 // Check if the date is not today or in the future
@@ -425,9 +457,8 @@ class _FormPageState extends State<FormPage> {
 
                               return null; // Return null if validation passes
                             },
-
-
                           ),
+
                           SizedBox(height: 10),
 
                           // Country
@@ -604,11 +635,11 @@ class _FormPageState extends State<FormPage> {
   }
 
 }
-class SuccessPage extends StatelessWidget {
+class WelcomePage extends StatelessWidget {
   final String firstName;
   final String lastName;
 
-  SuccessPage({Key? key, required this.firstName, required this.lastName}) : super(key: key);
+  WelcomePage({Key? key, required this.firstName, required this.lastName}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,11 @@
-// db_helper.dart
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
-class DBHelper {
+class DatabaseHelper {
+  static final DatabaseHelper _instance = DatabaseHelper._internal();
+  factory DatabaseHelper() => _instance;
+  DatabaseHelper._internal();
+
   static Database? _database;
 
   Future<Database> get database async {
@@ -12,14 +15,27 @@ class DBHelper {
   }
 
   Future<Database> _initDatabase() async {
-    return openDatabase(
-      join(await getDatabasesPath(), 'user_database.db'),
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT, firstName TEXT, lastName TEXT, email TEXT UNIQUE, contactNumber TEXT, password TEXT, dateOfBirth TEXT, gender TEXT, country TEXT, termsAccepted INTEGER)',
-        );
-      },
+    String path = join(await getDatabasesPath(), 'user_database.db');
+    return await openDatabase(
+      path,
       version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE users(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            firstName TEXT, 
+            lastName TEXT, 
+            email TEXT,
+            contactNumber TEXT,
+            password TEXT,
+            dateOfBirth TEXT,
+            gender TEXT,
+            country TEXT,
+            termsAccepted INTEGER
+          )
+        ''');
+        print('Database created');
+      },
     );
   }
 
@@ -32,16 +48,21 @@ class DBHelper {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getUsers() async {
+    final db = await database;
+    return await db.query('users');
+  }
+
   Future<Map<String, dynamic>?> getUserByEmail(String email) async {
     final db = await database;
-    final List<Map<String, dynamic>> result = await db.query(
+    final List<Map<String, dynamic>> maps = await db.query(
       'users',
       where: 'email = ?',
       whereArgs: [email],
     );
-    if (result.isNotEmpty) {
-      return result.first; // Return the first matching user
+    if (maps.isNotEmpty) {
+      return maps.first;
     }
-    return null; // No user found
+    return null;
   }
 }

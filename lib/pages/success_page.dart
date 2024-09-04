@@ -1,50 +1,37 @@
 import 'package:flutter/material.dart';
-
-class SuccessPage extends StatelessWidget {
+import '../db_helper.dart';
+class DetailsPage extends StatelessWidget {
   final String firstName;
   final String lastName;
+  final String email;
+  final String gender;
+  final String country;
 
-  SuccessPage({Key? key, required this.firstName, required this.lastName}) : super(key: key);
+  DetailsPage({
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.gender,
+    required this.country,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.orange.shade100, Colors.orange.shade600],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/green_tick.png', // Ensure this path is correct and the image is in assets
-                width: 250,
-                height: 250,
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Registered Successfully',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Hi $firstName $lastName',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
+      appBar: AppBar(
+        title: Text('Details Page'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('First Name: $firstName', style: TextStyle(fontSize: 18)),
+            Text('Last Name: $lastName', style: TextStyle(fontSize: 18)),
+            Text('Email: $email', style: TextStyle(fontSize: 18)),
+            Text('Gender: $gender', style: TextStyle(fontSize: 18)),
+            Text('Country: $country', style: TextStyle(fontSize: 18)),
+          ],
         ),
       ),
     );
