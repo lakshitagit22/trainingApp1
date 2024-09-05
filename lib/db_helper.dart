@@ -25,7 +25,7 @@ class DatabaseHelper {
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             firstName TEXT, 
             lastName TEXT, 
-            email TEXT,
+            email TEXT UNIQUE,
             contactNumber TEXT,
             password TEXT,
             dateOfBirth TEXT,
@@ -34,35 +34,57 @@ class DatabaseHelper {
             termsAccepted INTEGER
           )
         ''');
-        print('Database created');
+        print('Database created at $path');
       },
     );
   }
 
   Future<void> insertUser(Map<String, dynamic> user) async {
-    final db = await database;
-    await db.insert(
-      'users',
-      user,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    try {
+      final db = await database;
+      await db.insert(
+        'users',
+        user,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print('User inserted. Verifying data...');
+      List<Map<String, dynamic>> users = await db.query('users');
+      print('All users: $users');
+    } catch (e) {
+      print('Error inserting user: $e');
+    }
   }
 
   Future<List<Map<String, dynamic>>> getUsers() async {
-    final db = await database;
-    return await db.query('users');
+    try {
+      final db = await database;
+      return await db.query('users');
+    } catch (e) {
+      print('Error retrieving users: $e');
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>?> getUserByEmail(String email) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'email = ?',
-      whereArgs: [email],
-    );
-    if (maps.isNotEmpty) {
-      return maps.first;
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'users',
+        where: 'LOWER(email) = ?',
+        whereArgs: [email.toLowerCase()],
+      );
+      if (maps.isNotEmpty) {
+        return maps.first;
+      }
+      return null;
+    } catch (e) {
+      print('Error retrieving user by email: $e');
+      return null;
     }
-    return null;
+  }
+
+  Future<void> close() async {
+    final db = await database;
+    await db.close();
   }
 }

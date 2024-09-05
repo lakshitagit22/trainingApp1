@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trainingapp1/pages/form_page.dart';
+import 'package:trainingapp1/pages/success_page.dart';
 
 // This is the entry point of the application
 void main() {

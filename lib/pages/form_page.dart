@@ -81,21 +81,24 @@ class _FormPageState extends State<FormPage> {
   void _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
   }
-  Future<void> _fetchUserData(String email) async {
+  Future<String?> _fetchUserData(String email) async {
     try {
       final dbHelper = DatabaseHelper();
       final user = await dbHelper.getUserByEmail(email);
       if (user != null) {
-        // Handle the retrieved user data
-        print('User: ${user['firstName']} ${user['lastName']}');
-        // You can also update state or UI here if needed
+        // Extract and return the email from the user data
+        print('User found: ${user['firstName']} ${user['lastName']}');
+        return user['email']; // Return the email
       } else {
         print('No user found with that email.');
+        return null; // Return null if no user is found
       }
     } catch (e) {
       print('Error fetching user: $e');
+      return null; // Return null in case of an error
     }
   }
+
   Future<void> _selectedDate() async {
     final DateTime today = DateTime.now();
     final DateTime? pickedDate = await showDatePicker(
@@ -115,6 +118,7 @@ class _FormPageState extends State<FormPage> {
 
   Future<void> _registerUser() async {
     print('Register button pressed');
+
     setState(() {
       _termsError = _termsAccepted ? null : 'You must accept the terms and conditions';
       _genderError = _selectedGender == null ? 'Please select your gender' : null;
@@ -155,7 +159,7 @@ class _FormPageState extends State<FormPage> {
             Fluttertoast.showToast(
               msg: "User already registered",
               toastLength: Toast.LENGTH_LONG,
-              gravity: ToastGravity.CENTER,
+              gravity: ToastGravity.TOP,
               timeInSecForIosWeb: 1,
               backgroundColor: Colors.red,
               textColor: Colors.white,
@@ -165,24 +169,29 @@ class _FormPageState extends State<FormPage> {
           }
 
           await dbHelper.insertUser(user);
+          print(_firstNameController.text);
+          print(_lastNameController.text);
+          print(_emailController.text);
 
-          await _fetchUserData(_emailController.text);
+          // Fetch the user data and store the email
+          String? emaill = await _fetchUserData(_emailController.text);
+          if (emaill != null) {
+            print('Fetched email: $emaill');
+          } else {
+            print('Failed to fetch email.');
+          }
 
+          // Navigate to DetailsPage with the fetched email
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => DetailsPage(
-                firstName: _firstNameController.text,
-                lastName: _lastNameController.text,
-                email: _emailController.text,
-                gender: _selectedGender ?? 'Not specified',
-                country: _country ?? 'Not specified',
+                email: emaill ?? '', // Pass the fetched email to DetailsPage
               ),
             ),
           );
 
-
-
+          // Clear the form fields
           _firstNameController.clear();
           _lastNameController.clear();
           _emailController.clear();
@@ -208,6 +217,7 @@ class _FormPageState extends State<FormPage> {
       setState(() {});
     }
   }
+
 
 
 
@@ -340,7 +350,7 @@ class _FormPageState extends State<FormPage> {
                           TextFormField(
                             controller: _firstNameController,
                             decoration: InputDecoration(
-                              labelText: 'First Name',
+                              labelText: 'First Name *',
                               errorStyle: TextStyle(color: Colors.red),
                               border: UnderlineInputBorder(),
                             ),
@@ -352,7 +362,7 @@ class _FormPageState extends State<FormPage> {
                           TextFormField(
                             controller: _lastNameController,
                             decoration: InputDecoration(
-                              labelText: 'Last Name',
+                              labelText: 'Last Name ',
                               border: UnderlineInputBorder(),
                             ),
                           ),
@@ -362,7 +372,7 @@ class _FormPageState extends State<FormPage> {
                           TextFormField(
                             controller: _emailController,
                             decoration: InputDecoration(
-                              labelText: 'Email Address',
+                              labelText: 'Email Address *',
                               errorStyle: TextStyle(color: Colors.red),
                               border: UnderlineInputBorder(),
                             ),
@@ -487,7 +497,7 @@ class _FormPageState extends State<FormPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Select Gender',
+                                'Select Gender *',
                                 style: TextStyle(
                                   fontSize: MediaQuery.of(context).size.width * 0.04,
                                   color: _genderError != null ? Colors.red : Colors.black,
@@ -527,7 +537,7 @@ class _FormPageState extends State<FormPage> {
                           TextFormField(
                             controller: _passwordController,
                             decoration: InputDecoration(
-                                labelText: 'Password',
+                                labelText: 'Password *',
                                 errorText: _passwordError,
                                 errorStyle: TextStyle(color: Colors.red),
                                 border: UnderlineInputBorder(),
@@ -552,7 +562,7 @@ class _FormPageState extends State<FormPage> {
                           TextFormField(
                             controller: _confirmPasswordController,
                             decoration: InputDecoration(
-                                labelText: 'Confirm Password',
+                                labelText: 'Confirm Password *',
                                 errorText: _confirmPasswordError,
                                 errorStyle: TextStyle(color: Colors.red),
                                 border: UnderlineInputBorder(),
@@ -634,54 +644,4 @@ class _FormPageState extends State<FormPage> {
     );
   }
 
-}
-class WelcomePage extends StatelessWidget {
-  final String firstName;
-  final String lastName;
-
-  WelcomePage({Key? key, required this.firstName, required this.lastName}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.orange.shade100, Colors.orange.shade600],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/green_tick.png', // Ensure this path is correct and the image is in assets
-                width: 250,
-                height: 250,
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Registered Successfully',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Hi $firstName $lastName',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
