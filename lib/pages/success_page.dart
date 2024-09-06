@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../db_helper.dart';
-import 'form_page.dart';
+import 'package:trainingapp1/database/db_helper.dart';
 
 class DetailsPage extends StatefulWidget {
   final String email;
@@ -51,7 +50,6 @@ class _DetailsPageState extends State<DetailsPage> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        // Use a gradient background that changes color from light orange to dark orange
         body: Container(
           constraints: BoxConstraints.expand(),
           decoration: BoxDecoration(
@@ -75,18 +73,11 @@ class _DetailsPageState extends State<DetailsPage> {
                 return Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Center image
-                      Image.asset(
-                        'assets/images/green_tick.png', // Make sure to add the image to your assets
-                        width: 350,
-                        height:350,
-                      ),
-                      SizedBox(height: 20),
+                      // Greeting text at the top left
                       Text(
-                        'Registered Successfully',
+                        'Hi, ${user['firstName']} ${user['lastName']}',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -94,11 +85,60 @@ class _DetailsPageState extends State<DetailsPage> {
                         ),
                       ),
                       SizedBox(height: 20),
+
+                      // Centered green tick image
+                      Center(
+                        child: Image.asset(
+                          'assets/images/green_tick.png', // Make sure to add the image to your assets
+                          width: 300,
+                          height: 300,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+
+                      // Logged in successfully message
+                      Center(
+                        child: Text(
+                          'Logged in Successfully',
+                          style: TextStyle(
+                            fontSize: 22,
+                            // fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+
+                      // User details on the left side
                       Text(
-                        'Hi, ${user['firstName']} ${user['lastName']}',
+                        'My Details',
                         style: TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Email:            ${user['email']}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Gender:         ${user['gender']}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Country:        ${user['country']}',
+                        style: TextStyle(
+                          fontSize: 18,
                           color: Colors.black54,
                         ),
                       ),

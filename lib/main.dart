@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trainingapp1/pages/form_page.dart';
 import 'package:trainingapp1/pages/success_page.dart';
-
+import 'package:trainingapp1/pages/login_page.dart';
 // This is the entry point of the application
 void main() {
   runApp(const MyApp());
@@ -19,7 +19,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       // Set the home screen of the app to the FormPage widget
-      home: FormPage(),
+      home: LoginPage(),
     );
   }
 }
+
+//acjksd20@g.c

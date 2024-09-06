@@ -3,12 +3,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart'; // Import fluttertoast
-import '../db_helper.dart'; // Import the database helper
+import 'package:trainingapp1/database/db_helper.dart'; // Import the database helper
 import 'success_page.dart'; // Import the SuccessPage
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:trainingapp1/database/user_data.dart';
+import 'package:trainingapp1/pages/login_page.dart';
 class DateInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -173,25 +174,15 @@ class _FormPageState extends State<FormPage> {
           print(_lastNameController.text);
           print(_emailController.text);
 
-          // Fetch the user data and store the email
-          String? emaill = await _fetchUserData(_emailController.text);
-          if (emaill != null) {
-            print('Fetched email: $emaill');
-          } else {
-            print('Failed to fetch email.');
-          }
-
-          // Navigate to DetailsPage with the fetched email
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailsPage(
-                email: emaill ?? '', // Pass the fetched email to DetailsPage
-              ),
-            ),
+          Fluttertoast.showToast(
+            msg: "Registration Successful",
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.TOP,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            fontSize: 16.0,
           );
-
-          // Clear the form fields
           _firstNameController.clear();
           _lastNameController.clear();
           _emailController.clear();
@@ -208,6 +199,40 @@ class _FormPageState extends State<FormPage> {
             _passwordError = null;
             _confirmPasswordError = null;
           });
+          await Future.delayed(Duration(seconds: 4));
+          // Fetch the user data and store the email
+          String? emaill = await _fetchUserData(_emailController.text);
+          if (emaill != null) {
+            print('Fetched email: $emaill');
+          } else {
+            print('Failed to fetch email.');
+          }
+
+          // Navigate to DetailsPage with the fetched email
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LoginPage(),
+            ),
+          );
+
+          // Clear the form fields
+          // _firstNameController.clear();
+          // _lastNameController.clear();
+          // _emailController.clear();
+          // _contactNumberController.clear();
+          // _passwordController.clear();
+          // _confirmPasswordController.clear();
+          // _dobController.clear();
+          // setState(() {
+          //   _selectedGender = null;
+          //   _country = null;
+          //   _termsAccepted = false;
+          //   _termsError = null;
+          //   _genderError = null;
+          //   _passwordError = null;
+          //   _confirmPasswordError = null;
+          // });
         } catch (e) {
           print('Error: $e');
         }
