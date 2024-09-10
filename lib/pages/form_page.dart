@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart'; // Import fluttertoast
 import 'package:trainingapp1/database/db_helper.dart'; // Import the database helper
-import 'success_page.dart'; // Import the SuccessPage
 import 'package:intl/intl.dart';
-import 'package:flutter/services.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trainingapp1/database/user_data.dart';
+
 import 'package:trainingapp1/pages/login_page.dart';
 class DateInputFormatter extends TextInputFormatter {
   @override
@@ -115,8 +115,9 @@ class _FormPageState extends State<FormPage> {
       });
     }
   }
-
-
+  String hashPassword(String password){
+    return md5.convert(utf8.encode(password)).toString();
+  }
   Future<void> _registerUser() async {
     print('Register button pressed');
 
@@ -151,7 +152,9 @@ class _FormPageState extends State<FormPage> {
           'country': _country,
           'termsAccepted': _termsAccepted ? 1 : 0,
         };
-
+        final email=_emailController.text;
+        final password=_passwordController.text;
+        final hashedPassword=hashPassword(password);
         try {
           final dbHelper = DatabaseHelper();
 
@@ -199,6 +202,7 @@ class _FormPageState extends State<FormPage> {
             _passwordError = null;
             _confirmPasswordError = null;
           });
+
           await Future.delayed(Duration(seconds: 4));
           // Fetch the user data and store the email
           String? emaill = await _fetchUserData(_emailController.text);

@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:bcrypt/bcrypt.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -42,12 +43,20 @@ class DatabaseHelper {
   Future<void> insertUser(Map<String, dynamic> user) async {
     try {
       final db = await database;
+
+      // Hash the password before inserting
+      String hashedPassword = BCrypt.hashpw(user['password'], BCrypt.gensalt());
+      user['password'] = hashedPassword;
+
+      print('Inserting user: $user'); // Debug print
+
       await db.insert(
         'users',
         user,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      print('User inserted. Verifying data...');
+
+      // Verify insertion
       List<Map<String, dynamic>> users = await db.query('users');
       print('All users: $users');
     } catch (e) {

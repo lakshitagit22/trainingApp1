@@ -3,7 +3,11 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:trainingapp1/database/db_helper.dart'; // Update to your actual DB helper import
 import 'package:trainingapp1/pages/success_page.dart';
 import 'package:trainingapp1/pages/form_page.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart'; //generates unique token for the user
+import 'package:crypto/crypto.dart';
+import 'dart:convert'; // for utf8.encode
+import 'package:bcrypt/bcrypt.dart';
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -18,28 +22,12 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
 
   bool _validatePassword(String password) {
-    // Implement password validation logic if needed
-    return password.isNotEmpty; // Simple check for demonstration
+    // Implement your actual password validation logic
+    return password.isNotEmpty; // Placeholder validation
   }
-
-  Future<String?> _fetchUserData(String email) async {
-    try {
-      final dbHelper = DatabaseHelper();
-      final user = await dbHelper.getUserByEmail(email);
-      if (user != null) {
-        // Extract and return the email from the user data
-        print('User found: ${user['firstName']} ${user['lastName']}');
-        return user['email']; // Return the email
-      } else {
-        print('No user found with that email.');
-        return null; // Return null if no user is found
-      }
-    } catch (e) {
-      print('Error fetching user: $e');
-      return null; // Return null in case of an error
-    }
+  String hashPassword(String password) {
+    return md5.convert(utf8.encode(password)).toString();
   }
-
   Future<void> _loginUser() async {
     setState(() {
       _emailError = _emailController.text.isEmpty ? 'Email is required' : null;
@@ -54,31 +42,51 @@ class _LoginPageState extends State<LoginPage> {
       final email = _emailController.text;
       final password = _passwordController.text;
 
-      final dbHelper = DatabaseHelper();
-      final user = await dbHelper.getUserByEmail(email);
-      String? emaill = await _fetchUserData(_emailController.text);
-      if (emaill != null) {
-        print('Fetched email: $emaill');
-      } else {
-        print('Failed to fetch email.');
-      }
-      if (user != null) {
-        // Assuming user['password'] is hashed or encrypted
-        if (user['password'] == password) {
-          // Navigate to the next screen or dashboard
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailsPage(
-                email: emaill ?? '', // Pass the fetched email to DetailsPage
+      try {
+        final dbHelper = DatabaseHelper();
+        final user = await dbHelper.getUserByEmail(email);
+
+        if (user != null) {
+          print('Fetched user: $user'); // Debugging
+
+          // Verify the password using BCrypt
+          final hashedPassword = user['password'];
+          if (BCrypt.checkpw(password, hashedPassword)) {
+            // Store user details in SharedPreferences
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('email', user['email']);
+            await prefs.setString('firstName', user['firstName']); // Ensure this key matches your DB field
+            await prefs.setString('lastName', user['lastName']); // Ensure this key matches your DB field
+
+            // Generate and store token
+            final uuid = Uuid();
+            await prefs.setString('token', uuid.v4());
+
+            // Navigate to the details page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetailsPage(
+                  email: user['email'],
+                ),
               ),
-            ),
-          );
-          _emailController.clear();
-          _passwordController.clear();
+            );
+            _emailController.clear();
+            _passwordController.clear();
+          } else {
+            Fluttertoast.showToast(
+              msg: "Invalid email or password",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.TOP,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              fontSize: 16.0,
+            );
+          }
         } else {
           Fluttertoast.showToast(
-            msg: "Invalid email or password",
+            msg: "User not found",
             toastLength: Toast.LENGTH_LONG,
             gravity: ToastGravity.TOP,
             timeInSecForIosWeb: 1,
@@ -87,9 +95,10 @@ class _LoginPageState extends State<LoginPage> {
             fontSize: 16.0,
           );
         }
-      } else {
+      } catch (e) {
+        print('Error logging in: $e');
         Fluttertoast.showToast(
-          msg: "User not found",
+          msg: "An error occurred. Please try again.",
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.TOP,
           timeInSecForIosWeb: 1,
@@ -100,6 +109,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -151,8 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                     keyboardType: TextInputType.emailAddress,
                                     style: TextStyle(color: Colors.black),
-                                    validator: (value) =>
-                                    value!.isEmpty ? 'Email is required' : null,
+                                    validator: (value) => value!.isEmpty ? 'Email is required' : null,
                                   ),
                                   SizedBox(height: 16),
                                   TextFormField(
@@ -180,9 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                     obscureText: !_isPasswordVisible,
                                     style: TextStyle(color: Colors.black),
-                                    validator: (value) => value!.isEmpty
-                                        ? 'Password is required'
-                                        : null,
+                                    validator: (value) => value!.isEmpty ? 'Password is required' : null,
                                   ),
                                   SizedBox(height: 50),
                                   ElevatedButton(
@@ -211,8 +218,8 @@ class _LoginPageState extends State<LoginPage> {
                                         MaterialPageRoute(builder: (context) => FormPage()),
                                       );
                                     },
-                                    child: RichText(  //allows the styling of different parts of the text independently
-                                      text: TextSpan( //represents a segment of the text with a specific style
+                                    child: RichText(
+                                      text: TextSpan(
                                         style: TextStyle(
                                           fontSize: 16,
                                         ),
@@ -223,7 +230,6 @@ class _LoginPageState extends State<LoginPage> {
                                               color: Colors.black,
                                             ),
                                           ),
-                                          // SizedBox(height: 10),
                                           TextSpan(
                                             text: '\n',
                                           ),
@@ -236,10 +242,9 @@ class _LoginPageState extends State<LoginPage> {
                                           ),
                                         ],
                                       ),
-                                      textAlign: TextAlign.center, // Center-aligns the text
+                                      textAlign: TextAlign.center,
                                     ),
                                   )
-
                                 ],
                               ),
                             ),

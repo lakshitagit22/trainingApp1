@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:trainingapp1/pages/form_page.dart';
-import 'package:trainingapp1/pages/success_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trainingapp1/pages/login_page.dart';
-// This is the entry point of the application
-void main() {
-  runApp(const MyApp());
+// Update to your actual import
+import 'package:trainingapp1/pages/success_page.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final email = prefs.getString('email');
+
+  runApp(MyApp(initialRoute: email != null ? '/details' : '/login'));
 }
 
-// This class represents the main application widget
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialRoute;
 
-  // Build the user interface (UI) of the app
+  MyApp({required this.initialRoute});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Disable the debug banner in the top left corner
-      debugShowCheckedModeBanner: false,
-
-      // Set the home screen of the app to the FormPage widget
-      home: LoginPage(),
+      title: 'Training App',
+      initialRoute: initialRoute,
+      routes: {
+        '/login': (context) => LoginPage(),
+        '/details': (context) => DetailsPage(email: 'default_email'), // Handle this accordingly
+      },
     );
   }
 }
-
-//acjksd20@g.c
