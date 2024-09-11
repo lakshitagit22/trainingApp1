@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart'; //generates unique token for the user
 import 'package:crypto/crypto.dart';
 import 'dart:convert'; // for utf8.encode
 import 'package:bcrypt/bcrypt.dart';
+import 'package:trainingapp1/pages/profile_page.dart';
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -66,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => DetailsPage(
+                builder: (context) => ProfilePage(
                   email: user['email'],
                 ),
               ),

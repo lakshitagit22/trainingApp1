@@ -64,6 +64,49 @@ class DatabaseHelper {
     }
   }
 
+  Future<void> updateUser(String email, Map<String, dynamic> updatedUser) async {
+    try {
+      final db = await database;
+
+      // Ensure email is present in the updatedUser map
+      updatedUser['email'] = email;
+
+      // Update the user record with new values
+      await db.update(
+        'users',
+        updatedUser,
+        where: 'LOWER(email) = ?',
+        whereArgs: [email.toLowerCase()],
+      );
+
+      // Verify update
+      List<Map<String, dynamic>> users = await db.query('users', where: 'LOWER(email) = ?', whereArgs: [email.toLowerCase()]);
+      print('Updated user: $users');
+    } catch (e) {
+      print('Error updating user: $e');
+    }
+  }
+
+  Future<void> updateUserPassword(String email, String hashedPassword) async {
+    try {
+      final db = await database;
+
+      // Update the password for the user with the specified email
+      await db.update(
+        'users',
+        {'password': hashedPassword},
+        where: 'LOWER(email) = ?',
+        whereArgs: [email.toLowerCase()],
+      );
+
+      // Verify update
+      List<Map<String, dynamic>> users = await db.query('users', where: 'LOWER(email) = ?', whereArgs: [email.toLowerCase()]);
+      print('Updated password for user: $users');
+    } catch (e) {
+      print('Error updating password: $e');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getUsers() async {
     try {
       final db = await database;

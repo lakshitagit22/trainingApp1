@@ -28,7 +28,7 @@ class _DetailsPageState extends State<DetailsPage> {
   }
 
   Future<String?> _fetchFirstName() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs= await SharedPreferences.getInstance();
     final firstName = prefs.getString('firstName');
     print('Fetched first name: $firstName'); // Debugging
     return firstName;
