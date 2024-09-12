@@ -19,7 +19,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'user_database.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // Incremented version to handle schema changes
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users(
@@ -32,12 +32,31 @@ class DatabaseHelper {
             dateOfBirth TEXT,
             gender TEXT,
             country TEXT,
-            termsAccepted INTEGER
+            termsAccepted INTEGER,
+            profileImagePath TEXT  // Add this line for profile image path
           )
         ''');
         print('Database created at $path');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // Add the new column for profile image path in existing database
+          await db.execute('ALTER TABLE users ADD COLUMN profileImagePath TEXT');
+        }
+      },
     );
+  }
+  Future<void> updateUserProfileImage(String email, String imagePath) async {
+    final db = await database;
+    print('update profile image ${imagePath}');
+    await db.update(
+      'users',
+      {'profileImagePath': imagePath},
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+    print('Inserted successfuly');
+    print(imagePath);
   }
 
   Future<void> insertUser(Map<String, dynamic> user) async {
@@ -84,6 +103,45 @@ class DatabaseHelper {
       print('Updated user: $users');
     } catch (e) {
       print('Error updating user: $e');
+    }
+  }
+
+  Future<void> updateUserProfile(
+      String email,
+      String firstName,
+      String lastName,
+      String contactNumber,
+      String dateOfBirth,
+      String gender,
+      String country,
+      String? profileImagePath) async {
+    try {
+      final db = await database;
+
+      // Create a map with updated user details
+      final updatedUser = {
+        'firstName': firstName,
+        'lastName': lastName,
+        'contactNumber': contactNumber,
+        'dateOfBirth': dateOfBirth,
+        'gender': gender,
+        'country': country,
+        'profileImagePath': profileImagePath,
+      };
+
+      // Update the user record with new values
+      await db.update(
+        'users',
+        updatedUser,
+        where: 'LOWER(email) = ?',
+        whereArgs: [email.toLowerCase()],
+      );
+
+      // Verify update
+      List<Map<String, dynamic>> users = await db.query('users', where: 'LOWER(email) = ?', whereArgs: [email.toLowerCase()]);
+      print('Updated user profile: $users');
+    } catch (e) {
+      print('Error updating user profile: $e');
     }
   }
 

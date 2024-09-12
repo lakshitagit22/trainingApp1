@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:trainingapp1/database/db_helper.dart'; // Update to your actual DB helper import
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bcrypt/bcrypt.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:image_cropper/image_cropper.dart';
 import 'login_page.dart'; // Import login page if needed
-
+import 'package:permission_handler/permission_handler.dart';
+enum AppState{
+  free,
+  picked,
+  cropped,
+}
 class ProfilePage extends StatefulWidget {
   final String email;
 
@@ -15,6 +24,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+   File? _profileImage;
+   late AppState state;
   bool _isChangePassword = false;
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
@@ -40,31 +51,145 @@ class _ProfilePageState extends State<ProfilePage> {
     'United Kingdom',
     'Australia',
     'India',
-    // Add more countries as needed
+    'America',
   ];
+  final ImagePicker _picker=ImagePicker();
 
   @override
   void initState() {
     super.initState();
+    state=AppState.free;
     _initializeFuture = _initializeFields();
   }
+   Future<void> _initializeFields() async {
+     final dbHelper = DatabaseHelper();
+     final user = await dbHelper.getUserByEmail(widget.email);
 
-  Future<void> _initializeFields() async {
-    final dbHelper = DatabaseHelper();
-    final user = await dbHelper.getUserByEmail(widget.email);
-    if (user != null) {
-      _firstNameController = TextEditingController(text: user['firstName']);
-      _lastNameController = TextEditingController(text: user['lastName']);
-      _contactNumberController = TextEditingController(text: user['contactNumber']);
-      _dobController = TextEditingController(text: user['dateOfBirth']);
-      _genderController = TextEditingController(text: user['gender']);
-      _countryController = TextEditingController(text: user['country']);
-      _selectedCountry = user['country'] ?? ''; // Set selected country
-      _selectedGender = user['gender'];
-      setState(() {}); // Refresh the UI with new values
-    } else {
+     if (user != null) {
+
+       var profileImagePath = user['profileImagePath'];
+       print('Loaded profile image: $profileImagePath');
+
+       if (profileImagePath != null && profileImagePath.isNotEmpty) {
+
+         setState(() {
+           _profileImage = File(profileImagePath);
+         });
+       } else {
+         //default image if user has not uploaded image
+         setState(() {
+           _profileImage = File('assets/images/default_image.png');
+         });
+       }
+
+       _firstNameController = TextEditingController(text: user['firstName']);
+       _lastNameController = TextEditingController(text: user['lastName']);
+       _contactNumberController = TextEditingController(text: user['contactNumber']);
+       _dobController = TextEditingController(text: user['dateOfBirth']);
+       _genderController = TextEditingController(text: user['gender']);
+       _countryController = TextEditingController(text: user['country']);
+       _selectedCountry = user['country'] ?? ''; // Set selected country
+       _selectedGender = user['gender'];
+     } else {
+       Fluttertoast.showToast(
+         msg: "User not found",
+         toastLength: Toast.LENGTH_LONG,
+         gravity: ToastGravity.TOP,
+         timeInSecForIosWeb: 1,
+         backgroundColor: Colors.red,
+         textColor: Colors.white,
+         fontSize: 16.0,
+       );
+     }
+   }
+
+  Future<void> requestPermissions() async {
+    final status = await Permission.camera.request();
+    if (status.isGranted) {
+      print("Camera permission granted");
+    } else if (status.isDenied) {
+      print("Camera permission denied");
+    } else if (status.isPermanentlyDenied) {
+      print("Camera permission permanently denied");
+      // Open app settings for the user to grant permissions
+      openAppSettings();
+    }
+  }
+  Future<void> _chooseImageSource() async {
+    try {
+      showModalBottomSheet( //used to slide up from the bottom of the screen
+        context: context,
+        builder: (context) => Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Heading
+              Text(
+                'Choose Profile Photo From',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20), // Space between heading and icons
+
+              // Row with icons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center, // Center icons horizontally
+                children: [
+                  // Camera
+                  GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await requestPermissions();
+                      final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                      if (pickedFile != null) {
+                        _updateProfileImage(File(pickedFile.path));
+                      }
+                    },
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
+                      children: [
+                        Icon(Icons.camera_alt, color: Colors.blue, size: 40), // Increase icon size
+                        SizedBox(height: 8), // Space between icon and text
+                        Text('Camera'),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 40), // Space between the two icons
+                  // Gallery
+                  GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await requestPermissions();
+                      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                      if (pickedFile != null) {
+                        _updateProfileImage(File(pickedFile.path));
+                      }
+                    },
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
+                      children: [
+                        Icon(Icons.photo_library, color: Colors.blue, size: 40), // Increase icon size
+                        SizedBox(height: 8), // Space between icon and text
+                        Text('Gallery'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+ catch (e) {
+      // Handle any errors that occur during the image picking process
       Fluttertoast.showToast(
-        msg: "User not found",
+        msg: "Error picking image: $e",
         toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.TOP,
         timeInSecForIosWeb: 1,
@@ -75,6 +200,35 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _updateProfileImage(File image) async {
+    final dbHelper = DatabaseHelper();
+    try {
+      print('Saving profile image :${image.path}');
+      await dbHelper.updateUserProfileImage(widget.email, image.path);
+      setState(() {
+        _profileImage = image;
+      });
+      Fluttertoast.showToast(
+        msg: "Profile image updated successfully",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.TOP,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Error updating profile image",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.TOP,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  }
   String? _validateDOB(String? value) {
     if (value == null || value.isEmpty) {
       return 'Date of Birth is required';
@@ -324,13 +478,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             CircleAvatar(
                               radius: 60,
-                              backgroundImage: AssetImage('assets/images/default_image.png'), // Placeholder image
+                              backgroundImage: _profileImage==null ? AssetImage('assets/images/default_image.png') :FileImage(_profileImage!) as ImageProvider, // Placeholder image
                             ),
                             Positioned(
                               bottom: 0,
                               right: 0,
                               child: GestureDetector(
                                 onTap: () {
+                                  _chooseImageSource();
                                   // Implement image picker
                                 },
                                 child: Container(
@@ -369,7 +524,28 @@ class _ProfilePageState extends State<ProfilePage> {
                               validator: (value) => value!.isEmpty ? 'Email is required' : null,
                             ),
                             SizedBox(height: 20),
-                            _buildTextField('Contact Number', _contactNumberController),
+                            // _buildTextField('Contact Number', _contactNumberController),
+                            TextFormField(
+                              controller: _contactNumberController,
+                              decoration: InputDecoration(
+                                labelText: 'Contact Number',
+                                border: UnderlineInputBorder(),
+                                errorStyle: TextStyle(color: Colors.red),
+                              ),
+                              keyboardType: TextInputType.phone,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(10),
+                              ],
+                              validator: (value){
+                                if(value!.isEmpty){
+                                  return null;
+                                }
+
+                                if(value.length!=10) return 'Contact number must be 10 digits long';
+                                return null;
+                              },
+                            ),
                             TextFormField(
                               controller: _dobController,
                               decoration: InputDecoration(
@@ -596,8 +772,3 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
-
-
-//lakshita3@gmail.com
-//lakshitasethi40@gmail.com
-
