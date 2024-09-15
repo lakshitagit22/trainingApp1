@@ -7,8 +7,10 @@ import 'package:bcrypt/bcrypt.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:image_cropper/image_cropper.dart';
-import 'login_page.dart'; // Import login page if needed
+// Import login page if needed
 import 'package:permission_handler/permission_handler.dart';
+
+import '../../flutter/packages/flutter/lib/material.dart';
 enum AppState{
   free,
   picked,
@@ -115,92 +117,69 @@ class _ProfilePageState extends State<ProfilePage> {
       openAppSettings();
     }
   }
-  Future<void> _chooseImageSource() async {
-    try {
-      showModalBottomSheet( //used to slide up from the bottom of the screen
-        context: context,
-        builder: (context) => Container(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Heading
-              Text(
-                'Choose Profile Photo From',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 20), // Space between heading and icons
+   Future<void> _chooseImageSource() async {
+     final status = await Permission.camera.status;
+     if (!status.isGranted) {
+       await Permission.camera.request();
+     }
 
-              // Row with icons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center, // Center icons horizontally
-                children: [
-                  // Camera
-                  GestureDetector(
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await requestPermissions();
-                      final pickedFile = await _picker.pickImage(source: ImageSource.camera);
-                      if (pickedFile != null) {
-                        _updateProfileImage(File(pickedFile.path));
-                      }
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
-                      children: [
-                        Icon(Icons.camera_alt, color: Colors.blue, size: 40), // Increase icon size
-                        SizedBox(height: 8), // Space between icon and text
-                        Text('Camera'),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 40), // Space between the two icons
-                  // Gallery
-                  GestureDetector(
-                    onTap: () async {
-                      Navigator.pop(context);
-                      await requestPermissions();
-                      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-                      if (pickedFile != null) {
-                        _updateProfileImage(File(pickedFile.path));
-                      }
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center, // Center content vertically
-                      children: [
-                        Icon(Icons.photo_library, color: Colors.blue, size: 40), // Increase icon size
-                        SizedBox(height: 8), // Space between icon and text
-                        Text('Gallery'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    }
- catch (e) {
-      // Handle any errors that occur during the image picking process
-      Fluttertoast.showToast(
-        msg: "Error picking image: $e",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.TOP,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    }
-  }
+     final pickedFile = await showModalBottomSheet<ImageSource>(
+       context: context,
+       builder: (context) => BottomSheet(
+         onClosing: () {},
+         builder: (context) => Column(
+           mainAxisSize: MainAxisSize.min,
+           children: [
+             ListTile(
+               leading: Icon(Icons.camera_alt),
+               title: Text('Take a photo'),
+               onTap: () => Navigator.pop(context, ImageSource.camera),
+             ),
+             ListTile(
+               leading: Icon(Icons.image),
+               title: Text('Choose from gallery'),
+               onTap: () => Navigator.pop(context, ImageSource.gallery),
+             ),
+           ],
+         ),
+       ),
+     );
 
-  Future<void> _updateProfileImage(File image) async {
+     if (pickedFile != null) {
+       final pickedFilePath = (await ImagePicker().pickImage(source: pickedFile))?.path;
+
+       if (pickedFilePath != null) {
+         final croppedFile = await ImageCropper().cropImage(
+           sourcePath: pickedFilePath,
+           aspectRatioPresets: [
+             CropAspectRatioPreset.square,
+             CropAspectRatioPreset.ratio3x2,
+             CropAspectRatioPreset.ratio4x3,
+             CropAspectRatioPreset.ratio16x9
+           ],
+           androidUiSettings: AndroidUiSettings(
+             toolbarTitle: 'Crop Image',
+             toolbarColor: Colors.deepOrange,
+             toolbarWidgetColor: Colors.white,
+             initAspectRatio: CropAspectRatioPreset.square,
+             lockAspectRatio: false,
+           ),
+           iosUiSettings: IOSUiSettings(
+             minimumAspectRatio: 1.0,
+           ),
+         );
+
+         if (croppedFile != null) {
+           setState(() {
+             _profileImage = File(croppedFile.path);
+           });
+         }
+       }
+     }
+   }
+
+
+   Future<void> _updateProfileImage(File image) async {
     final dbHelper = DatabaseHelper();
     try {
       print('Saving profile image :${image.path}');
@@ -743,10 +722,10 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             RadioTheme(
               data: RadioThemeData(
-                fillColor: MaterialStateProperty.resolveWith((states) {
+                fillColor: WidgetStateProperty.resolveWith((states) {
                   return Colors.orange;
                 }),
-                overlayColor: MaterialStateProperty.resolveWith((states) {
+                overlayColor: WidgetStateProperty.resolveWith((states) {
                   return Colors.orange.withOpacity(0.2);
                 }),
               ),

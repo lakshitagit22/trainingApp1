@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:trainingapp1/database/db_helper.dart'; // Update to your actual DB helper import
-import 'package:trainingapp1/pages/success_page.dart';
 import 'package:trainingapp1/pages/form_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart'; //generates unique token for the user

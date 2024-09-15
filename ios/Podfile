@@ -1,8 +1,17 @@
 # Uncomment this line to define a global platform for your project
-# platform :ios, '12.0'
+platform :ios, '12.0'
+
+target 'Runner' do
+  use_frameworks!
+  # Pods for Runner
+
+  # Example:
+  # pod 'SomePod', '~> 1.0'
+end
+
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
-ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+ENV['COCOAPODS_DISABLE_STATS'] = 'false'
 
 project 'Runner', {
   'Debug' => :debug,

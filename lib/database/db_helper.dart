@@ -48,7 +48,6 @@ class DatabaseHelper {
   }
   Future<void> updateUserProfileImage(String email, String imagePath) async {
     final db = await database;
-    print('update profile image ${imagePath}');
     await db.update(
       'users',
       {'profileImagePath': imagePath},
@@ -56,7 +55,6 @@ class DatabaseHelper {
       whereArgs: [email],
     );
     print('Inserted successfuly');
-    print(imagePath);
   }
 
   Future<void> insertUser(Map<String, dynamic> user) async {

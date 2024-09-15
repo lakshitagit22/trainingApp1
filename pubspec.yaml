@@ -28,6 +28,9 @@ dependencies:
   flutter_secure_storage: ^8.0.0
   permission_handler:
 dev_dependencies:
+  flutter_cocoapods:
+    git:
+      url: https://github.com/flutter/flutter_cocoapods
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
@@ -36,4 +39,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
-    - assets/images/login_background.png
+#    - assets/images/login_background.png
